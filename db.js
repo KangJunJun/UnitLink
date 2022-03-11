@@ -1,11 +1,12 @@
 const sql = require('mssql');
+const dbConfig = require('./config/db-config.json');
 let pool;
 
 const sqlConfig = {
-  user: '',
-  password: '',
-  database: '',
-  server: '',
+  user: dbConfig.user,
+  password: dbConfig.password,
+  database: dbConfig.database,
+  server: dbConfig.server,
   pool: {
     max: 10,
     min: 0,

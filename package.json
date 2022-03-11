@@ -1,6 +1,6 @@
 {
   "name": "unitlink",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "",
   "main": "main.js",
   "types": "module",
@@ -17,6 +17,7 @@
   "build": {
     "productName": "UnitLink",
     "appId": "com.electron.unitLink",
+  
     "files": [
       "!.vscode${/*}"
     ],
