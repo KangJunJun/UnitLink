@@ -2,10 +2,10 @@ const sql = require('mssql');
 let pool;
 
 const sqlConfig = {
-  user: 'System101',
-  password: 'dkapflzksh10!',
-  database: 'System101_dev4',
-  server: 'system101n.database.windows.net',
+  user: '',
+  password: '',
+  database: '',
+  server: '',
   pool: {
     max: 10,
     min: 0,
