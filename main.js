@@ -7,6 +7,9 @@ const {
   Tray,
   dialog,
 } = require('electron');
+// 기존에 작성된 require() 구문 생략...
+const { autoUpdater } = require('electron-updater');
+const log = require('electron-log');
 const { ConnectionPool } = require('./db');
 const fs = require('fs');
 const path = require('path');
@@ -22,6 +25,37 @@ const {
 let tray;
 let settingTime = 3; // 추후 DB나 레지스트리 등으로 초기값 셋팅
 let folderPath = path.join(__dirname, './video');
+
+/* Updater ======================================================*/
+
+autoUpdater.on('checking-for-update', () => {
+  log.info('Checking for update...');
+});
+autoUpdater.on('update-available', info => {
+  log.info('Update available.');
+});
+autoUpdater.on('update-not-available', info => {
+  log.info('latest version.');
+});
+autoUpdater.on('error', err => {
+  log.info('error in auto-updater. error : ' + err);
+});
+autoUpdater.on('download-progress', progressObj => {
+  let log_message = 'Download speed: ' + progressObj.bytesPerSecond;
+  log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
+  log_message =
+    log_message +
+    ' (' +
+    progressObj.transferred +
+    '/' +
+    progressObj.total +
+    ')';
+  log.info(log_message);
+});
+autoUpdater.on('update-downloaded', info => {
+  log.info('Update downloaded.');
+});
+/* Updater ======================================================*/
 
 ipcMain.on('exit-app', (event, arg) => {
   app.quit();
@@ -61,6 +95,9 @@ ipcMain.on('getFileList', (event, arg) => {
 // Some APIs can only be used after this event occurs.
 
 app.whenReady().then(() => {
+  // 자동 업데이트 등록
+  autoUpdater.checkForUpdates();
+
   const displays = screen.getAllDisplays();
   app.on('activate', () => {
     // On macOS it's common to re-create a window in the app when the

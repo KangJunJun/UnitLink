@@ -1,6 +1,6 @@
 {
   "name": "unitlink",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "main.js",
   "types": "module",
@@ -47,6 +47,8 @@
   },
   "dependencies": {
     "babel-eslint": "^10.1.0",
+    "electron-log": "^4.4.6",
+    "electron-updater": "^4.6.5",
     "gridjs": "^5.0.2",
     "jquery": "^3.6.0",
     "mssql": "^8.0.2",
