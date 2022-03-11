@@ -1,0 +1,56 @@
+{
+  "name": "unitlink",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "types": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron .",
+    "watch": "nodemon --watch . --exec electron .",
+    "dev": "nodemon --exec electron . ",
+    "pack": "electron-builder",
+    "build:osx": "electron-builder --mac",
+    "deploy": "electron-builder --windows nsis:x64",
+    "babelBuild": "babel ./ -d ./dist/ -w"
+  },
+  "build": {
+    "productName": "UnitLink",
+    "appId": "com.electron.unitLink",
+    "files": [
+      "!.vscode${/*}"
+    ],
+    "win": {
+      "target": [
+        "zip",
+        "nsis"
+      ],
+      "icon": "./unitlink256.ico"
+    }
+  },
+  "keywords": [],
+  "author": "Limomed Inc.",
+  "license": "Copyright (c) 2022 ",
+  "devDependencies": {
+    "@babel/cli": "^7.17.6",
+    "@babel/core": "^7.17.5",
+    "@babel/preset-env": "^7.16.11",
+    "@babel/register": "^7.17.0",
+    "electron": "^17.1.0",
+    "electron-builder": "^22.14.13",
+    "eslint": "^8.9.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-prettier": "^8.4.0",
+    "eslint-plugin-import": "^2.25.4",
+    "eslint-plugin-prettier": "^4.0.0",
+    "prettier": "2.5.1"
+  },
+  "dependencies": {
+    "babel-eslint": "^10.1.0",
+    "gridjs": "^5.0.2",
+    "jquery": "^3.6.0",
+    "mssql": "^8.0.2",
+    "nodemon": "^2.0.15",
+    "upgrade": "^1.1.0"
+  }
+}

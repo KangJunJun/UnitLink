@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" />
+  <link href="../styles.css" rel="stylesheet" />
+  <title>Unit Link</title>
+</head>
+
+
+<body>
+  <!-- <iframe width="100%" height="100%"
+    src="https://www.youtube.com/embed/vo2p352SOaM?rel=0&autoplay=1&showinfo=0&controls=0&loof=1" frameborder="0"
+    allowfullscreen>
+  </iframe> -->
+
+  <video id='videoPlayer' width="100%" height="100%">
+    Your browser does not support the video tag.
+  </video>
+
+  <script src="../renderer.js"></script>
+  <script type="text/javascript">
+    const { ipcRenderer } = require('electron');
+    const path = require('path');
+    const getVideo = document.getElementById('videoPlayer')
+    let fileList;
+    let index = 0;
+
+    ipcRenderer.send('getFileList');
+    ipcRenderer.on('setFileList', (event, arg) => {
+      fileList = shuffle(arg);
+      getVideo.setAttribute('src', path.join(__dirname, '../video', fileList[0]));
+      getVideo.addEventListener('ended', nextVideo, false);
+      getVideo.play();
+    });
+
+    function shuffle(array) {
+      let tmp, current, top = array.length;
+      if (top)
+        while (--top) {
+          current = Math.floor(Math.random() * (top + 1));
+          tmp = array[current];
+          array[current] = array[top];
+          array[top] = tmp;
+        }
+      console.log(array);
+      return array;
+    }
+
+    function nextVideo() {
+      if (++index == fileList.length) index = 0; // 전부 돌면 다시 반속
+      getVideo.setAttribute('src', path.join(__dirname, '../video', fileList[index]));
+      getVideo.play();
+    }
+
+  </script>
+</body>
+<style>
+  body,
+  html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+  }
+</style>
+
+</html>
