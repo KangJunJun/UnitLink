@@ -7,7 +7,7 @@ const {
   Tray,
   dialog,
 } = require('electron');
-// 기존에 작성된 require() 구문 생략...
+// 기존???�성??require() 구문 ?�략...
 const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
 const { ConnectionPool } = require('./db');
@@ -23,7 +23,7 @@ const {
   test,
 } = require('./mainModule');
 let tray;
-let settingTime = 3; // 추후 DB나 레지스트리 등으로 초기값 셋팅
+let settingTime = 3; // 추후 DB???��??�트�??�으�?초기�??�팅
 let folderPath = path.join(__dirname, './video');
 
 /* Updater ======================================================*/
@@ -35,7 +35,8 @@ autoUpdater.on('update-available', info => {
   log.info('Update available.');
 });
 autoUpdater.on('update-not-available', info => {
-  log.info('latest version.');
+  log.info('latest version. : ' + info.version);
+  log.info('app version. : ' + app.getVersion());
 });
 autoUpdater.on('error', err => {
   log.info('error in auto-updater. error : ' + err);
@@ -95,7 +96,7 @@ ipcMain.on('getFileList', (event, arg) => {
 // Some APIs can only be used after this event occurs.
 
 app.whenReady().then(() => {
-  // 자동 업데이트 등록
+  // ?�동 ?�데?�트 ?�록
   autoUpdater.checkForUpdates();
 
   const displays = screen.getAllDisplays();
