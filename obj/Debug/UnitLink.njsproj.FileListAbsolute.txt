@@ -1,2 +1,0 @@
-C:\Source\UnitLink\obj\Debug\UnitLink.njsproj.CoreCompileInputs.cache
-C:\Source\UnitLink\bin\Microsoft.NodejsTools.WebRole.dll
