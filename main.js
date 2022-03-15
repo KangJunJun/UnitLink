@@ -7,8 +7,9 @@ const {
   Tray,
   dialog,
 } = require('electron');
-// 기존???�성??require() 구문 ?�략...
+// 기존에 작성된 require() 구문 생략...
 const { autoUpdater } = require('electron-updater');
+const ProgressBar = require('electron-progressbar');
 const log = require('electron-log');
 const { ConnectionPool } = require('./db');
 const fs = require('fs');
@@ -23,8 +24,9 @@ const {
   test,
 } = require('./mainModule');
 let tray;
-let settingTime = 3; // 추후 DB???��??�트�??�으�?초기�??�팅
+let settingTime = 3; // 추후 DB나 레지스트리 등으로 초기값 셋팅
 let folderPath = path.join(__dirname, './video');
+let progressBar;
 
 /* Updater ======================================================*/
 
@@ -52,10 +54,39 @@ autoUpdater.on('download-progress', progressObj => {
     progressObj.total +
     ')';
   log.info(log_message);
+
+  progressBar = new ProgressBar({
+    text: 'Downloading...',
+    detail: 'Downloading...',
+  });
+
+  progressBar
+    .on('completed', function () {
+      console.info(`completed...`);
+      progressBar.detail = 'Task completed. Exiting...';
+    })
+    .on('aborted', function () {
+      console.info(`aborted...`);
+    });
 });
+
 autoUpdater.on('update-downloaded', info => {
   log.info('Update downloaded.');
+  progressBar.setCompleted();
+  dialog
+    .showMessageBox({
+      type: 'info',
+      title: 'Update ready',
+      message: 'Install & restart now?',
+      buttons: ['Restart', 'Later'],
+    })
+    .then(result => {
+      const buttonIndex = result.response;
+
+      if (buttonIndex === 0) autoUpdater.quitAndInstall(false, true);
+    });
 });
+
 /* Updater ======================================================*/
 
 ipcMain.on('exit-app', (event, arg) => {
@@ -96,7 +127,7 @@ ipcMain.on('getFileList', (event, arg) => {
 // Some APIs can only be used after this event occurs.
 
 app.whenReady().then(() => {
-  // ?�동 ?�데?�트 ?�록
+  // 자동 업데이트 등록
   autoUpdater.checkForUpdates();
 
   const displays = screen.getAllDisplays();
