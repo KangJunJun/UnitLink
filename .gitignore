@@ -1,7 +1,10 @@
 node_modules
 dist
-.vscode
+.vscode/
+.vs/
 config
-.vs
-bin
-obj
+obj/
+# exclude video file
+video/*
+# exception to the rule
+!video/.gitkeep 

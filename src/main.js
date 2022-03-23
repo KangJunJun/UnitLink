@@ -22,10 +22,13 @@ const {
   readDirectory,
   createMainWindow,
   test,
+  sendFileList,
 } = require('./mainModule');
+const { downloadFile } = require('./ftpService');
+const { getFilePathList } = require('./fileService');
 let tray;
 let settingTime = 3; // 추후 DB나 레지스트리 등으로 초기값 셋팅
-let folderPath = path.join(__dirname, './video');
+let folderPath = path.join(__dirname, '../video');
 let progressBar;
 
 /* Updater ======================================================*/
@@ -33,17 +36,17 @@ let progressBar;
 autoUpdater.on('checking-for-update', () => {
   log.info('Checking for update...');
 });
-autoUpdater.on('update-available', info => {
+autoUpdater.on('update-available', (info) => {
   log.info('Update available.');
 });
-autoUpdater.on('update-not-available', info => {
+autoUpdater.on('update-not-available', (info) => {
   log.info('latest version. : ' + info.version);
   log.info('app version. : ' + app.getVersion());
 });
-autoUpdater.on('error', err => {
+autoUpdater.on('error', (err) => {
   log.info('error in auto-updater. error : ' + err);
 });
-autoUpdater.on('download-progress', progressObj => {
+autoUpdater.on('download-progress', (progressObj) => {
   let log_message = 'Download speed: ' + progressObj.bytesPerSecond;
   log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
   log_message =
@@ -70,7 +73,7 @@ autoUpdater.on('download-progress', progressObj => {
     });
 });
 
-autoUpdater.on('update-downloaded', info => {
+autoUpdater.on('update-downloaded', (info) => {
   log.info('Update downloaded.');
   progressBar.setCompleted();
   dialog
@@ -80,7 +83,7 @@ autoUpdater.on('update-downloaded', info => {
       message: 'Install & restart now?',
       buttons: ['Restart', 'Later'],
     })
-    .then(result => {
+    .then((result) => {
       const buttonIndex = result.response;
 
       if (buttonIndex === 0) autoUpdater.quitAndInstall(false, true);
@@ -119,16 +122,18 @@ ipcMain.on('select-dirs', async (event, arg) => {
   folderPath = path.join(__dirname, result.filePaths);
 });
 
-ipcMain.on('getFileList', (event, arg) => {
-  readDirectory(folderPath);
+ipcMain.on('getFileList', async (event, arg) => {
+  const fileList = await getFilePathList(folderPath);
+  sendFileList(fileList);
 });
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // 자동 업데이트 등록
   autoUpdater.checkForUpdates();
+  await downloadFile();
 
   const displays = screen.getAllDisplays();
   app.on('activate', () => {
@@ -138,7 +143,7 @@ app.whenReady().then(() => {
   });
 
   ConnectionPool();
-  tray = new Tray(path.join(__dirname, 'unitlink.ico'));
+  tray = new Tray(path.join(__dirname, '../unitlink.ico'));
   tray.setToolTip('Unit Link');
   tray.setContextMenu(contextMenu);
   tray.on('double-click', () => createMainWindow());

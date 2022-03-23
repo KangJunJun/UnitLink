@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy" />
-  <link href="../styles.css" rel="stylesheet" />
+  <link href="./styles.css" rel="stylesheet" />
   <title>Unit Link</title>
 </head>
 
@@ -19,18 +19,21 @@
     Your browser does not support the video tag.
   </video>
 
-  <script src="../renderer.js"></script>
+  <script src='https://cdn.jsdelivr.net/npm/hls.js@latest'></script>
+  <script src="./renderer.js"></script>
   <script type="text/javascript">
     const { ipcRenderer } = require('electron');
     const path = require('path');
-    const getVideo = document.getElementById('videoPlayer')
+    const getVideo = document.getElementById('videoPlayer');
+    const videoSrc = '/video/output.m3u8';
+
     let fileList;
     let index = 0;
 
     ipcRenderer.send('getFileList');
     ipcRenderer.on('setFileList', (event, arg) => {
       fileList = shuffle(arg);
-      getVideo.setAttribute('src', path.join(__dirname, '../video', fileList[0]));
+      getVideo.setAttribute('src', fileList[0]);
       getVideo.addEventListener('ended', nextVideo, false);
       getVideo.play();
     });
@@ -49,8 +52,8 @@
     }
 
     function nextVideo() {
-      if (++index == fileList.length) index = 0; // 전부 돌면 다시 반속
-      getVideo.setAttribute('src', path.join(__dirname, '../video', fileList[index]));
+      if (++index == fileList.length) index = 0; // 전부 돌면 다시 반복
+      getVideo.setAttribute('src', fileList[0]);
       getVideo.play();
     }
 

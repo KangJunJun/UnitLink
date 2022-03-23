@@ -1,5 +1,5 @@
 const sql = require('mssql');
-const dbConfig = require('./config/db-config.json');
+const dbConfig = require('../config/db-config.json');
 let pool;
 
 const sqlConfig = {
@@ -21,11 +21,11 @@ const sqlConfig = {
 
 const poolPromise = new sql.ConnectionPool(sqlConfig)
   .connect()
-  .then(pool => {
+  .then((pool) => {
     console.log('Connected to MSSQL');
     return pool;
   })
-  .catch(err => console.log('Connection Failed : ', err));
+  .catch((err) => console.log('Connection Failed : ', err));
 
 const ConnectionPool = async () => {
   pool = await poolPromise;

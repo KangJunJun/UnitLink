@@ -1,12 +1,9 @@
 const { BrowserWindow, powerMonitor, Menu, app } = require('electron');
 const { queryDatabase } = require('./db');
-const fs = require('fs');
-const path = require('path');
 let timerStartFlag = false;
 let videoWindow;
 let timer;
 let mainWindow;
-
 function createMainWindow() {
   // Create the browser window.
   if (BrowserWindow.getAllWindows().length === 0) {
@@ -27,8 +24,7 @@ function createMainWindow() {
 
     // and load the index.html of the app.
     //mainWindow.setMenu(null);
-    // mainWindow.setVisibleOnAllWorkspaces(true);
-    mainWindow.loadFile('./view/optionForm.html');
+    mainWindow.loadFile('../src/view/optionForm.html');
     // Open the DevTools.
     mainWindow.webContents.openDevTools();
   } else mainWindow.show();
@@ -51,7 +47,9 @@ function createVideoWindow() {
   });
   //videoWindow.webContents.openDevTools();
   videoWindow.setMenu(null);
-  videoWindow.loadFile('./view/video.html');
+  videoWindow.loadFile('./src/view/video.html');
+  videoWindow.setAlwaysOnTop(true, 'screen-saver');
+  videoWindow.setVisibleOnAllWorkspaces(true);
   videoWindow.on('closed', () => {
     videoWindow = null;
   });
@@ -113,25 +111,14 @@ const contextMenu = Menu.buildFromTemplate([
   { label: '닫기', type: 'normal', click: () => app.quit() },
 ]);
 
-// read all files in "mp4" directory
-function readDirectory(dir) {
-  fs.readdir(dir, (e, files) => {
-    // On error, show and return error
-    filesList = files.filter(function (e) {
-      return path.extname(e).toLowerCase() === '.mp4';
-    });
-
-    videoWindow.webContents.send('setFileList', filesList);
-    //mainWindow.webContents.send('setFileList', filesList);
-  });
-}
+const sendFileList = filesList => videoWindow.webContents.send('setFileList', filesList);
 
 module.exports = {
   timerStart,
   timerStop,
   contextMenu,
   mainWindow,
-  readDirectory,
   createMainWindow,
   test,
+  sendFileList,
 };
