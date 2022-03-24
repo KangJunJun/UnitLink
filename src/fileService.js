@@ -17,11 +17,11 @@ const fsStat = promisify(stat);
 const fsOpen = promisify(open);
 const fsClose = promisify(close);
 const fsUnlink = promisify(unlink);
-let filePathList = [];
 
 async function getFilePathList(dirPath) {
-  const videoExtName = ['.mp4', '.avi'];
+  const videoExtName = ['.mp4', '.ogg'];
   const files = await fsReadDir(dirPath);
+  let filePathList = [];
 
   for (const file of files) {
     const fullPath = join(dirPath, file);
@@ -29,7 +29,8 @@ async function getFilePathList(dirPath) {
     if (stats.isFile()) {
       videoExtName.includes(extname(fullPath)) && filePathList.push(fullPath);
     } else if (stats.isDirectory()) {
-      await getFilePathList(fullPath);
+      const list = await getFilePathList(fullPath);
+      filePathList.push(...list);
     }
   }
   return filePathList;

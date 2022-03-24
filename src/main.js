@@ -1,28 +1,18 @@
 // Modules to control application life and create native browser window
-const {
-  app,
-  screen,
-  BrowserWindow,
-  ipcMain,
-  Tray,
-  dialog,
-} = require('electron');
+const { app, screen, BrowserWindow, ipcMain, Tray, dialog } = require('electron');
 // 기존에 작성된 require() 구문 생략...
 const { autoUpdater } = require('electron-updater');
 const ProgressBar = require('electron-progressbar');
 const log = require('electron-log');
 const { ConnectionPool } = require('./db');
-const fs = require('fs');
 const path = require('path');
 const {
   timerStop,
   timerStart,
   contextMenu,
   mainWindow,
-  readDirectory,
   createMainWindow,
   test,
-  sendFileList,
 } = require('./mainModule');
 const { downloadFile } = require('./ftpService');
 const { getFilePathList } = require('./fileService');
@@ -36,26 +26,20 @@ let progressBar;
 autoUpdater.on('checking-for-update', () => {
   log.info('Checking for update...');
 });
-autoUpdater.on('update-available', (info) => {
+autoUpdater.on('update-available', info => {
   log.info('Update available.');
 });
-autoUpdater.on('update-not-available', (info) => {
+autoUpdater.on('update-not-available', info => {
   log.info('latest version. : ' + info.version);
   log.info('app version. : ' + app.getVersion());
 });
-autoUpdater.on('error', (err) => {
+autoUpdater.on('error', err => {
   log.info('error in auto-updater. error : ' + err);
 });
-autoUpdater.on('download-progress', (progressObj) => {
+autoUpdater.on('download-progress', progressObj => {
   let log_message = 'Download speed: ' + progressObj.bytesPerSecond;
   log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
-  log_message =
-    log_message +
-    ' (' +
-    progressObj.transferred +
-    '/' +
-    progressObj.total +
-    ')';
+  log_message = log_message + ' (' + progressObj.transferred + '/' + progressObj.total + ')';
   log.info(log_message);
 
   progressBar = new ProgressBar({
@@ -73,7 +57,7 @@ autoUpdater.on('download-progress', (progressObj) => {
     });
 });
 
-autoUpdater.on('update-downloaded', (info) => {
+autoUpdater.on('update-downloaded', info => {
   log.info('Update downloaded.');
   progressBar.setCompleted();
   dialog
@@ -83,7 +67,7 @@ autoUpdater.on('update-downloaded', (info) => {
       message: 'Install & restart now?',
       buttons: ['Restart', 'Later'],
     })
-    .then((result) => {
+    .then(result => {
       const buttonIndex = result.response;
 
       if (buttonIndex === 0) autoUpdater.quitAndInstall(false, true);
@@ -122,10 +106,6 @@ ipcMain.on('select-dirs', async (event, arg) => {
   folderPath = path.join(__dirname, result.filePaths);
 });
 
-ipcMain.on('getFileList', async (event, arg) => {
-  const fileList = await getFilePathList(folderPath);
-  sendFileList(fileList);
-});
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -154,7 +134,7 @@ app.whenReady().then(async () => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
-  // if (process.platform !== 'darwin') app.quit();
+  //if (process.platform !== 'darwin') app.quit();
 });
 
 // In this file you can include the rest of your app's specific main process

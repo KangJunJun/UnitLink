@@ -1,7 +1,11 @@
-const { BrowserWindow, powerMonitor, Menu, app } = require('electron');
+const { BrowserWindow, powerMonitor, powerSaveBlocker, Menu, app, screen } = require('electron');
 const { queryDatabase } = require('./db');
+const { getFilePathList } = require('./fileService');
+const path = require('path');
+const screenSaver = 'screenSaver';
+
+let powerSaveBlockId = 0;
 let timerStartFlag = false;
-let videoWindow;
 let timer;
 let mainWindow;
 function createMainWindow() {
@@ -10,6 +14,7 @@ function createMainWindow() {
     mainWindow = new BrowserWindow({
       width: 800,
       height: 600,
+      icon: path.join(__dirname, '../unitlink.ico'),
       webPreferences: {
         // preload: path.join(__dirname, 'preload.js'),
         nodeIntegration: true,
@@ -22,9 +27,8 @@ function createMainWindow() {
       });
     });
 
-    // and load the index.html of the app.
     //mainWindow.setMenu(null);
-    mainWindow.loadFile('../src/view/optionForm.html');
+    mainWindow.loadFile(path.join(__dirname, './view/optionForm.html'));
     // Open the DevTools.
     mainWindow.webContents.openDevTools();
   } else mainWindow.show();
@@ -34,12 +38,16 @@ async function test() {
   const bb = await queryDatabase();
   mainWindow.webContents.send('DataSend', bb);
 }
-function createVideoWindow() {
-  videoWindow = new BrowserWindow({
+function createVideoWindow(fileList, bounds) {
+  let videoWindow = new BrowserWindow({
+    title: screenSaver,
     width: 1000,
     height: 600,
     fullscreen: true,
     show: false,
+    icon: path.join(__dirname, '../unitlink.ico'),
+    x: bounds?.x ?? 0 + 50,
+    y: bounds?.y ?? 0 + 50,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -47,25 +55,49 @@ function createVideoWindow() {
   });
   //videoWindow.webContents.openDevTools();
   videoWindow.setMenu(null);
-  videoWindow.loadFile('./src/view/video.html');
+  videoWindow.loadFile(path.join(__dirname, './view/video.html'));
   videoWindow.setAlwaysOnTop(true, 'screen-saver');
   videoWindow.setVisibleOnAllWorkspaces(true);
-  videoWindow.on('closed', () => {
-    videoWindow = null;
-  });
+  videoWindow.on('closed', () => (videoWindow = null));
+
   videoWindow.once('ready-to-show', () => {
     videoWindow.show();
+    videoWindow.webContents.send('setFileList', fileList);
   });
 }
 
-function setScreeSaver(settingTime) {
+async function setScreeSaver(settingTime) {
   const idleTime = powerMonitor.getSystemIdleTime();
+  const screenSaverWins = BrowserWindow.getAllWindows().filter(win => win.title == screenSaver);
   console.log(idleTime);
-  if (idleTime >= settingTime && videoWindow == null) {
-    createVideoWindow();
-  } else if (idleTime === 0 && videoWindow != null) {
-    videoWindow.close();
+  if (idleTime >= settingTime && screenSaverWins.length === 0) {
+    powerSaveBlockId = powerSaveBlocker.start('prevent-display-sleep'); // 절전모드 차단
+    let fileList = await getFilePathList(path.join(__dirname, '../video'));
+    shuffle(fileList);
+    // 듀얼이상 모니터 사용을 위함
+    for (const display of screen.getAllDisplays()) {
+      createVideoWindow(fileList, display.bounds);
+    }
+  } else if (idleTime === 0 && screenSaverWins.length > 0) {
+    powerSaveBlocker.isStarted(powerSaveBlockId) && powerSaveBlocker.stop(powerSaveBlockId); // 절전모드 차단 해제
+    for (const win of screenSaverWins) {
+      win.title == screenSaver && win.close();
+    }
   }
+}
+
+function shuffle(array) {
+  let tmp,
+    current,
+    top = array.length;
+  if (top)
+    while (--top) {
+      current = Math.floor(Math.random() * (top + 1));
+      tmp = array[current];
+      array[current] = array[top];
+      array[top] = tmp;
+    }
+  return array;
 }
 
 function flagOnOff(action) {
@@ -99,7 +131,7 @@ const contextMenu = Menu.buildFromTemplate([
     label: '시작',
     type: 'checkbox',
     checked: true,
-    click: () => timerStart(),
+    click: () => timerStart(3), // 추후 변수로 변경
   },
   {
     label: '정지',
@@ -111,8 +143,6 @@ const contextMenu = Menu.buildFromTemplate([
   { label: '닫기', type: 'normal', click: () => app.quit() },
 ]);
 
-const sendFileList = filesList => videoWindow.webContents.send('setFileList', filesList);
-
 module.exports = {
   timerStart,
   timerStop,
@@ -120,5 +150,4 @@ module.exports = {
   mainWindow,
   createMainWindow,
   test,
-  sendFileList,
 };
