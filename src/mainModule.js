@@ -1,6 +1,7 @@
 const { BrowserWindow, powerMonitor, powerSaveBlocker, Menu, app, screen } = require('electron');
 const { queryDatabase } = require('./db');
 const { getFilePathList } = require('./fileService');
+const { setEnvValue } = require('./envConfig');
 const path = require('path');
 const screenSaver = 'screenSaver';
 const optionWindowTitle = 'UnitLink Option Form';
@@ -25,7 +26,7 @@ function createOptionWindow() {
     });
     optionWindow.once('ready-to-show', () => {
       queryDatabase().then(data => {
-        optionWindow.webContents.send('DataSend', data);
+        optionWindow.webContents.send('DataSend', [data, process.env.settingTime]);
       });
     });
 
@@ -58,7 +59,6 @@ function createIntroWindow() {
     introWindow.show();
     fadeWindowOut(introWindow, 0.02, 10, 3);
   });
-
   //optionWindow.setMenu(null);
   introWindow.loadFile(path.join(__dirname, './view/intro.html'));
   // Open the DevTools.
@@ -99,11 +99,11 @@ function createVideoWindow(fileList, bounds) {
   });
 }
 
-async function setScreeSaver(settingTime) {
+async function setScreeSaver() {
   const idleTime = powerMonitor.getSystemIdleTime();
   const screenSaverWins = BrowserWindow.getAllWindows().filter(win => win.title == screenSaver);
   console.log(idleTime);
-  if (idleTime >= settingTime && screenSaverWins.length === 0) {
+  if (idleTime >= process.env.settingTime && screenSaverWins.length === 0) {
     powerSaveBlockId = powerSaveBlocker.start('prevent-display-sleep'); // 절전모드 차단
     let fileList = await getFilePathList(path.join(__dirname, '../video'));
     shuffle(fileList);
@@ -143,11 +143,11 @@ function flagOnOff(action) {
   return false;
 }
 
-function timerStart(settingTime) {
+function timerStart() {
   if (flagOnOff(true)) {
     clearInterval(timer);
     timer = setInterval(() => {
-      setScreeSaver(settingTime);
+      setScreeSaver();
     }, 1000);
   }
 }
@@ -164,7 +164,7 @@ const contextMenu = Menu.buildFromTemplate([
     label: '시작',
     type: 'checkbox',
     checked: true,
-    click: () => timerStart(global.settingTime), // 추후 변수로 변경
+    click: () => timerStart(), // 추후 변수로 변경
   },
   {
     label: '정지',
@@ -196,6 +196,14 @@ const fadeWindowOut = (browserWindow, step = 0.1, fadeEveryXSeconds = 2, initKee
   return interval;
 };
 
+function saveOption(arg) {
+  setEnvValue('settingTime', arg.settingTime);
+  if (timerStartFlag) {
+    timerStop();
+    timerStart();
+  }
+}
+
 module.exports = {
   timerStart,
   timerStop,
@@ -204,4 +212,5 @@ module.exports = {
   createOptionWindow,
   createIntroWindow,
   test,
+  saveOption,
 };

@@ -56,8 +56,12 @@
       ipcRenderer.send('test-app');
     });
 
+
     ipcRenderer.on('DataSend', (event, arg) => {
-      testdata = arg;
+      console.log(arg[0]);
+      console.log(arg[1]);
+      testdata = arg[0];
+      document.getElementById('settingTime').value = arg[1];
       $("#jsGrid").jsGrid({
         width: "400px",
         height: "200px",
@@ -65,7 +69,7 @@
 
 
         sorting: true, // 칼럼의 헤더를 눌렀을 때, 그 헤더를 통한 정렬
-        data: arg, //아래에 있는 client 배열을 데이터를 받아서
+        data: arg[0], //아래에 있는 client 배열을 데이터를 받아서
 
         fields: [ // 그리드 헤더 부분에 넣기 위해서 필드 지정
           { name: "KakaoAccount", type: "text", width: 150, align: "center" },
@@ -91,7 +95,7 @@
     // }
 
     function save() {
-      ipcRenderer.send('save', document.getElementById('settingTime').value);
+      ipcRenderer.send('save', { settingTime: document.getElementById('settingTime').value });
     };
 
     startButton.addEventListener('click', () => {

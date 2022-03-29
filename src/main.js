@@ -1,4 +1,8 @@
 // Modules to control application life and create native browser window
+require('dotenv').config();
+console.log(process.env.NODE_ENV);
+console.log(process.env.settingTime);
+console.log(process.env.isLogin);
 const env = process.env.NODE_ENV || 'development';
 const { app, screen, BrowserWindow, ipcMain, Tray, dialog } = require('electron');
 // 기존에 작성된 require() 구문 생략...
@@ -15,11 +19,10 @@ const {
   createOptionWindow,
   createIntroWindow,
   test,
+  saveOption,
 } = require('./mainModule');
 const { downloadFile } = require('./ftpService');
 let tray;
-//let settingTime = 5; // 추후 DB나 레지스트리 등으로 초기값 셋팅
-global.settingTime = 5;
 let folderPath = path.join(__dirname, '../video');
 let progressBar;
 
@@ -97,7 +100,7 @@ ipcMain.on('test-app', (event, arg) => {
 });
 
 ipcMain.on('timerStart', (event, arg) => {
-  timerStart(global.settingTime);
+  timerStart(process.env.settingTime);
 });
 
 ipcMain.on('timerStop', (event, arg) => {
@@ -105,9 +108,7 @@ ipcMain.on('timerStop', (event, arg) => {
 });
 
 ipcMain.on('save', (event, arg) => {
-  global.settingTime = arg;
-  timerStop();
-  timerStart(global.settingTime);
+  saveOption(arg);
 });
 
 ipcMain.on('select-dirs', async (event, arg) => {
@@ -143,7 +144,7 @@ app.whenReady().then(async () => {
   tray.setToolTip('Unit Link');
   tray.setContextMenu(contextMenu);
   tray.on('double-click', () => createOptionWindow());
-  timerStart(global.settingTime);
+  timerStart(process.env.settingTime);
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common

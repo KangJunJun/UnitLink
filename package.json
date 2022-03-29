@@ -24,7 +24,7 @@
       "oneClick": false
     },
     "files": [
-      "!.vscode${/*}"    
+      "!.vscode${/*}"
     ],
     "win": {
       "target": [
@@ -57,9 +57,11 @@
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "babel-eslint": "^10.1.0",
     "basic-ftp": "^4.6.6",
+    "dotenv": "^16.0.0",
     "electron-log": "^4.4.6",
     "electron-progressbar": "^2.0.1",
     "electron-updater": "^4.6.5",
+    "envfile": "^6.17.0",
     "fluent-ffmpeg": "^2.1.2",
     "ftp": "^0.3.10",
     "gridjs": "^5.0.2",
