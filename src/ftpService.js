@@ -7,6 +7,10 @@ const util = require('util');
 const fsMkDir = util.promisify(fs.mkdir);
 const fsStat = util.promisify(fs.stat);
 const localVideoPath = path.join(__dirname, '../video/');
+const { createIntroWindow } = require('./mainModule');
+const log = require('electron-log');
+log.transports.file.level = 'info';
+log.transports.file.file = __dirname + 'log.log';
 
 let progressBar;
 function runProgressbar() {
@@ -43,20 +47,21 @@ async function downloadFile() {
     let downList;
     let totalSize = 0;
     let dirList = await client.list();
+    log.info('vedio download list');
     for (const dir of dirList) {
       let files = await client.list(path.join(dir.name, '/'));
       const localDirPath = path.join(localVideoPath, dir.name);
       await ensureLocalDirectory(localDirPath);
       const localFiles = fs.readdirSync(localDirPath);
-      files = files.filter((el) => !localFiles.includes(el.name));
+      files = files.filter(el => !localFiles.includes(el.name));
       totalSize = files.reduce((sum, a) => sum + a.size, 0);
+      files.forEach(x => log.info(x.name));
     }
 
     // Set a new callback function which also resets the overall counter
-    client.trackProgress((info) => {
+    client.trackProgress(info => {
       console.log(info.bytesOverall);
-      if (totalSize > 0)
-        progressBar.value = Math.floor((info.bytesOverall / totalSize) * 100);
+      if (totalSize > 0) progressBar.value = Math.floor((info.bytesOverall / totalSize) * 100);
     });
 
     await downloadToDir(localVideoPath, './', client);
@@ -65,6 +70,7 @@ async function downloadFile() {
     client.trackProgress();
   } catch (err) {
     console.log(err);
+    log.info('vedio download error');
   }
   client.close();
   progressBar.setCompleted();

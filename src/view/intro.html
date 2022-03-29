@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<!-- style=' width: 100%; height: 100%;' -->
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" />
+  <link href="./styles.css" rel="stylesheet" />
+  <title>Unit Link</title>
+</head>
+
+
+<body>
+  <div class="container">
+    <div class="content">
+      <!-- <img src='../../image/UnitLink_Logo.png'> -->
+    </div>
+  </div>
+
+  <script src='https://cdn.jsdelivr.net/npm/hls.js@latest'></script>
+  <script src="./renderer.js">
+  </script>
+  <script type="text/javascript">
+  </script>
+</body>
+<style>
+  body {
+    overflow-x: hidden;
+  }
+
+
+  img {
+    position: absolute;
+    width: 400px;
+    height: 80px;
+    /* object-fit: cover; */
+    left: 50px;
+    top: 50px;
+    animation: 2s shake infinite;
+  }
+
+
+  html {
+    /* background-color: white; */
+    margin: 0;
+    padding: 0;
+  }
+
+  .container {
+    width: 540px;
+    height: 180px;
+    background-color: rgba(255, 255, 255, 0.7);
+    box-shadow: 3px 3px 10px 1px black;
+    border-radius: 30px;
+    overflow: hidden;
+  }
+
+  .content {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    background-size: 500px 100px;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-image: url(../../image/UnitLink_Logo.png);
+    animation: 2s shake infinite;
+  }
+
+  @keyframes shake {
+    90% {
+      transform: rotate(0deg);
+    }
+
+    92% {
+      transform: rotate(7deg);
+    }
+
+    94% {
+      transform: rotate(0deg);
+    }
+
+    96% {
+      transform: rotate(-7deg);
+    }
+
+    98% {
+      transform: rotate(0deg);
+    }
+  }
+</style>
+
+</html>

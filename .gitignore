@@ -4,6 +4,7 @@ dist
 .vs/
 config
 obj/
+*.log
 # exclude video file
 video/*
 # exception to the rule

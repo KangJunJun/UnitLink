@@ -3,15 +3,17 @@ const { queryDatabase } = require('./db');
 const { getFilePathList } = require('./fileService');
 const path = require('path');
 const screenSaver = 'screenSaver';
+const optionWindowTitle = 'UnitLink Option Form';
 
 let powerSaveBlockId = 0;
 let timerStartFlag = false;
 let timer;
-let mainWindow;
-function createMainWindow() {
+let optionWindow;
+function createOptionWindow() {
   // Create the browser window.
-  if (BrowserWindow.getAllWindows().length === 0) {
-    mainWindow = new BrowserWindow({
+  if (BrowserWindow.getAllWindows().filter(win => win.title == optionWindowTitle).length === 0) {
+    optionWindow = new BrowserWindow({
+      title: optionWindowTitle,
       width: 800,
       height: 600,
       icon: path.join(__dirname, '../unitlink.ico'),
@@ -21,22 +23,52 @@ function createMainWindow() {
         contextIsolation: false,
       },
     });
-    mainWindow.once('ready-to-show', () => {
+    optionWindow.once('ready-to-show', () => {
       queryDatabase().then(data => {
-        mainWindow.webContents.send('DataSend', data);
+        optionWindow.webContents.send('DataSend', data);
       });
     });
 
-    //mainWindow.setMenu(null);
-    mainWindow.loadFile(path.join(__dirname, './view/optionForm.html'));
+    //optionWindow.setMenu(null);
+    optionWindow.loadFile(path.join(__dirname, './view/optionForm.html'));
     // Open the DevTools.
-    mainWindow.webContents.openDevTools();
-  } else mainWindow.show();
+    optionWindow.webContents.openDevTools();
+  } else optionWindow.show();
+}
+
+function createIntroWindow() {
+  // Create the browser window.
+  //if (BrowserWindow.getAllWindows().length === 0) {
+  const introWindow = new BrowserWindow({
+    width: 600,
+    height: 200,
+    show: false,
+    frame: false,
+    resizable: false,
+    transparent: true,
+    titleBarStyle: 'hidden',
+    hasShadow: true,
+    icon: path.join(__dirname, '../unitlink.ico'),
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+    },
+  });
+  introWindow.webContents.on('did-finish-load', () => {
+    introWindow.show();
+    fadeWindowOut(introWindow, 0.02, 10, 3);
+  });
+
+  //optionWindow.setMenu(null);
+  introWindow.loadFile(path.join(__dirname, './view/intro.html'));
+  // Open the DevTools.
+  //introWindow.webContents.openDevTools();
+  //}
 }
 async function test() {
   //ConnectionPool();
   const bb = await queryDatabase();
-  mainWindow.webContents.send('DataSend', bb);
+  optionWindow.webContents.send('DataSend', bb);
 }
 function createVideoWindow(fileList, bounds) {
   let videoWindow = new BrowserWindow({
@@ -63,6 +95,7 @@ function createVideoWindow(fileList, bounds) {
   videoWindow.once('ready-to-show', () => {
     videoWindow.show();
     videoWindow.webContents.send('setFileList', fileList);
+    //videoWindow.webContents.send('setFileList', path.join(__dirname));
   });
 }
 
@@ -125,13 +158,13 @@ function timerStop() {
 }
 
 const contextMenu = Menu.buildFromTemplate([
-  { label: '환경설정', type: 'normal', click: () => createMainWindow() },
+  { label: '환경설정', type: 'normal', click: () => createOptionWindow() },
   { type: 'separator' },
   {
     label: '시작',
     type: 'checkbox',
     checked: true,
-    click: () => timerStart(3), // 추후 변수로 변경
+    click: () => timerStart(global.settingTime), // 추후 변수로 변경
   },
   {
     label: '정지',
@@ -143,11 +176,32 @@ const contextMenu = Menu.buildFromTemplate([
   { label: '닫기', type: 'normal', click: () => app.quit() },
 ]);
 
+const fadeWindowOut = (browserWindow, step = 0.1, fadeEveryXSeconds = 2, initKeep = 1) => {
+  let opacity = browserWindow.getOpacity();
+  let keep = initKeep;
+  // fadeEveryXSeconds 를 주기로 step에 맞게 단계를 나눠 fade 시킨다.
+  const interval = setInterval(() => {
+    // 투명도가 0이 되면 종료
+    if (opacity <= 0) {
+      clearInterval(interval);
+      browserWindow.close();
+      return interval;
+    }
+    browserWindow.setOpacity(opacity);
+    // keep 만큼 시간이 지난 후 Fade를 진행한다.
+    if (keep <= 0) opacity -= step;
+    else keep -= step;
+  }, fadeEveryXSeconds);
+
+  return interval;
+};
+
 module.exports = {
   timerStart,
   timerStop,
   contextMenu,
-  mainWindow,
-  createMainWindow,
+  optionWindow,
+  createOptionWindow,
+  createIntroWindow,
   test,
 };
