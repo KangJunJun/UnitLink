@@ -1,40 +1,35 @@
 // Modules to control application life and create native browser window
 require('dotenv').config();
 console.log(process.env.NODE_ENV);
-console.log(process.env.settingTime);
-console.log(process.env.isLogin);
-const env = process.env.NODE_ENV || 'development';
+
 const { app, screen, BrowserWindow, ipcMain, Tray, dialog } = require('electron');
 // 기존에 작성된 require() 구문 생략...
 const { autoUpdater } = require('electron-updater');
 const ProgressBar = require('electron-progressbar');
 const log = require('electron-log');
-const { ConnectionPool } = require('./db');
+const { ConnectionPool, checkLogin } = require('./db');
 const path = require('path');
 const {
   timerStop,
   timerStart,
-  contextMenu,
-  optionWindow,
   createOptionWindow,
-  createIntroWindow,
+  createLoginWindow,
   test,
   saveOption,
+  runUnitLink,
+  login,
 } = require('./mainModule');
-const { downloadFile } = require('./ftpService');
-let tray;
-let folderPath = path.join(__dirname, '../video');
 let progressBar;
 
 log.transports.file.level = 'info';
 log.transports.file.file = path.join(__dirname, '../log.log');
 
-// if (env === 'development') {
-//   require('electron-reload')(path.join(__dirname, '../'), {
-//     electron: path.join(__dirname, '../node_modules', '.bin', 'electron'),
-//     hardResetMethod: 'exit',
-//   });
-// }
+if (process.env.NODE_ENV === 'development') {
+  require('electron-reload')(path.join(__dirname, '../'), {
+    electron: path.join(__dirname, '../node_modules', '.bin', 'electron'),
+    hardResetMethod: 'exit',
+  });
+}
 
 /* Updater ======================================================*/
 autoUpdater.on('checking-for-update', () => {
@@ -100,7 +95,7 @@ ipcMain.on('test-app', (event, arg) => {
 });
 
 ipcMain.on('timerStart', (event, arg) => {
-  timerStart(process.env.settingTime);
+  timerStart();
 });
 
 ipcMain.on('timerStop', (event, arg) => {
@@ -111,14 +106,11 @@ ipcMain.on('save', (event, arg) => {
   saveOption(arg);
 });
 
-ipcMain.on('select-dirs', async (event, arg) => {
-  const result = await dialog.showOpenDialog(optionWindow, {
-    properties: ['openDirectory'],
-    // filters: [{ name: 'Movies', extensions: ['mkv', 'avi', 'mp4'] }],
-  });
-
-  console.log('directories selected', result.filePaths);
-  folderPath = path.join(__dirname, result.filePaths);
+ipcMain.on('checkLogin', async (event, arg) => {
+  login(arg);
+});
+ipcMain.on('closeApp', (evt, arg) => {
+  app.quit();
 });
 
 // This method will be called when Electron has finished
@@ -126,25 +118,18 @@ ipcMain.on('select-dirs', async (event, arg) => {
 // Some APIs can only be used after this event occurs.
 
 app.whenReady().then(async () => {
-  log.info(__dirname);
+  ConnectionPool();
   // 자동 업데이트 등록
   autoUpdater.checkForUpdates();
-  await downloadFile();
 
-  const displays = screen.getAllDisplays();
+  if (process.env.isLogin === 'true') await runUnitLink();
+  else createLoginWindow();
+
   app.on('activate', () => {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createOptionWindow();
   });
-
-  createIntroWindow();
-  ConnectionPool();
-  tray = new Tray(path.join(__dirname, '../unitlink.ico'));
-  tray.setToolTip('Unit Link');
-  tray.setContextMenu(contextMenu);
-  tray.on('double-click', () => createOptionWindow());
-  timerStart(process.env.settingTime);
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common

@@ -7,7 +7,6 @@ const util = require('util');
 const fsMkDir = util.promisify(fs.mkdir);
 const fsStat = util.promisify(fs.stat);
 const localVideoPath = path.join(__dirname, '../video/');
-const { createIntroWindow } = require('./mainModule');
 const log = require('electron-log');
 log.transports.file.level = 'info';
 log.transports.file.file = __dirname + 'log.log';

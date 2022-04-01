@@ -21,11 +21,11 @@ const sqlConfig = {
 
 const poolPromise = new sql.ConnectionPool(sqlConfig)
   .connect()
-  .then((pool) => {
+  .then(pool => {
     console.log('Connected to MSSQL');
     return pool;
   })
-  .catch((err) => console.log('Connection Failed : ', err));
+  .catch(err => console.log('Connection Failed : ', err));
 
 const ConnectionPool = async () => {
   pool = await poolPromise;
@@ -55,7 +55,22 @@ const queryDatabase = async () => {
   }
 };
 
+const checkLogin = async account => {
+  try {
+    const result = await pool
+      .request()
+      .query(
+        `SELECT * FROM UL_ACCOUNT WHERE LoginId = '${account.id}' AND Password = '${account.password}'`,
+      );
+    return result.recordset.length > 0;
+  } catch (error) {
+    console.log(error);
+    return { error };
+  }
+};
+
 module.exports = {
   ConnectionPool,
   queryDatabase,
+  checkLogin,
 };

@@ -1,7 +1,16 @@
-const { BrowserWindow, powerMonitor, powerSaveBlocker, Menu, app, screen } = require('electron');
-const { queryDatabase } = require('./db');
+const {
+  BrowserWindow,
+  powerMonitor,
+  powerSaveBlocker,
+  Menu,
+  app,
+  screen,
+  Tray,
+} = require('electron');
+const { queryDatabase, checkLogin } = require('./db');
 const { getFilePathList } = require('./fileService');
 const { setEnvValue } = require('./envConfig');
+const { downloadFile } = require('./ftpService');
 const path = require('path');
 const screenSaver = 'screenSaver';
 const optionWindowTitle = 'UnitLink Option Form';
@@ -10,6 +19,9 @@ let powerSaveBlockId = 0;
 let timerStartFlag = false;
 let timer;
 let optionWindow;
+let loginWindow;
+let tray;
+
 function createOptionWindow() {
   // Create the browser window.
   if (BrowserWindow.getAllWindows().filter(win => win.title == optionWindowTitle).length === 0) {
@@ -26,7 +38,7 @@ function createOptionWindow() {
     });
     optionWindow.once('ready-to-show', () => {
       queryDatabase().then(data => {
-        optionWindow.webContents.send('DataSend', [data, process.env.settingTime]);
+        optionWindow.webContents.send('DataSend', [data, process.env.settingTime ?? 30]);
       });
     });
 
@@ -65,6 +77,33 @@ function createIntroWindow() {
   //introWindow.webContents.openDevTools();
   //}
 }
+
+function createLoginWindow() {
+  // Create the browser window.
+  loginWindow = new BrowserWindow({
+    width: 360,
+    height: 480,
+    show: true,
+    frame: false,
+    resizable: false,
+    hasShadow: true,
+    icon: path.join(__dirname, '../unitlink.ico'),
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+    },
+  });
+
+  loginWindow.on('closed', () => {
+    if (process.env.isLogin === 'false') app.quit();
+    loginWindow = null;
+  });
+  loginWindow.setMenu(null);
+  loginWindow.loadFile(path.join(__dirname, './view/login.html'));
+  // Open the DevTools.
+  //loginWindow.webContents.openDevTools();
+}
+
 async function test() {
   //ConnectionPool();
   const bb = await queryDatabase();
@@ -101,9 +140,11 @@ function createVideoWindow(fileList, bounds) {
 
 async function setScreeSaver() {
   const idleTime = powerMonitor.getSystemIdleTime();
+  const settingTime = process.env.settingTime ?? 30;
   const screenSaverWins = BrowserWindow.getAllWindows().filter(win => win.title == screenSaver);
   console.log(idleTime);
-  if (idleTime >= process.env.settingTime && screenSaverWins.length === 0) {
+
+  if (idleTime >= settingTime && screenSaverWins.length === 0) {
     powerSaveBlockId = powerSaveBlocker.start('prevent-display-sleep'); // 절전모드 차단
     let fileList = await getFilePathList(path.join(__dirname, '../video'));
     shuffle(fileList);
@@ -204,6 +245,26 @@ function saveOption(arg) {
   }
 }
 
+async function runUnitLink() {
+  await downloadFile();
+  createIntroWindow();
+  tray = new Tray(path.join(__dirname, '../unitlink.ico'));
+  tray.setToolTip('Unit Link');
+  tray.setContextMenu(contextMenu);
+  tray.on('double-click', () => createOptionWindow());
+  timerStart();
+}
+
+async function login(account) {
+  const result = await checkLogin(account);
+
+  if (result === true) {
+    setEnvValue('isLogin', true); // 로그인은 최초 한번만 수행
+    loginWindow.close();
+    runUnitLink();
+  } else loginWindow.webContents.send('loginResult', result);
+}
+
 module.exports = {
   timerStart,
   timerStop,
@@ -211,6 +272,9 @@ module.exports = {
   optionWindow,
   createOptionWindow,
   createIntroWindow,
+  createLoginWindow,
   test,
   saveOption,
+  runUnitLink,
+  login,
 };

@@ -5,7 +5,9 @@ dist
 config
 obj/
 *.log
+.env
 # exclude video file
 video/*
 # exception to the rule
-!video/.gitkeep 
+#!video/.gitkeep 
+
