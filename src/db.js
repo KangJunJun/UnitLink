@@ -1,5 +1,6 @@
 const sql = require('mssql');
-const dbConfig = require('../config/db-config.json');
+const path = require('path');
+const dbConfig = require(path.join(__dirname, '../config/db-config.json'));
 let pool;
 
 const sqlConfig = {
@@ -8,7 +9,7 @@ const sqlConfig = {
   database: dbConfig.database,
   server: dbConfig.server,
   pool: {
-    max: 10,
+    max: 100,
     min: 0,
     idleTimeoutMillis: 30000,
   },
@@ -60,9 +61,23 @@ const checkLogin = async account => {
     const result = await pool
       .request()
       .query(
-        `SELECT * FROM UL_ACCOUNT WHERE LoginId = '${account.id}' AND Password = '${account.password}'`,
+        `SELECT Top 1 Id FROM UL_ACCOUNT WHERE LoginId = '${account.id}' AND Password = '${account.password}'`,
       );
-    return result.recordset.length > 0;
+    return result?.recordset.length > 0 ? result.recordset[0].Id : 0;
+  } catch (error) {
+    console.log(error);
+    return { error };
+  }
+};
+
+const getVideoFileList = async () => {
+  try {
+    const result = await pool.request().query(`
+      SELECT FileId, AdvertiserId, Name FROM UL_PlayList PL
+      INNER JOIN  UL_FileInfo FI ON PL.FileId = FI.Id
+      WHERE FileType = 0 AND IsON = 1 AND AccountId = ${process.env.loginId}
+      `);
+    return result.recordset;
   } catch (error) {
     console.log(error);
     return { error };
@@ -73,4 +88,5 @@ module.exports = {
   ConnectionPool,
   queryDatabase,
   checkLogin,
+  getVideoFileList,
 };

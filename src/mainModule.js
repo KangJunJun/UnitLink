@@ -37,15 +37,16 @@ function createOptionWindow() {
       },
     });
     optionWindow.once('ready-to-show', () => {
-      queryDatabase().then(data => {
-        optionWindow.webContents.send('DataSend', [data, process.env.settingTime ?? 30]);
-      });
+      // queryDatabase().then(data => {
+      //   optionWindow.webContents.send('DataSend', [data, process.env.settingTime ?? 30]);
+      // });
+      optionWindow.webContents.send('DataSend', process.env.settingTime ?? 30);
     });
 
-    //optionWindow.setMenu(null);
+    optionWindow.setMenu(null);
     optionWindow.loadFile(path.join(__dirname, './view/optionForm.html'));
     // Open the DevTools.
-    optionWindow.webContents.openDevTools();
+    //optionWindow.webContents.openDevTools();
   } else optionWindow.show();
 }
 
@@ -114,7 +115,7 @@ function createVideoWindow(fileList, bounds) {
     title: screenSaver,
     width: 1000,
     height: 600,
-    fullscreen: true,
+    //fullscreen: true,
     show: false,
     icon: path.join(__dirname, '../unitlink.ico'),
     x: bounds?.x ?? 0 + 50,
@@ -127,7 +128,7 @@ function createVideoWindow(fileList, bounds) {
   //videoWindow.webContents.openDevTools();
   videoWindow.setMenu(null);
   videoWindow.loadFile(path.join(__dirname, './view/video.html'));
-  videoWindow.setAlwaysOnTop(true, 'screen-saver');
+  //videoWindow.setAlwaysOnTop(true, 'screen-saver');
   videoWindow.setVisibleOnAllWorkspaces(true);
   videoWindow.on('closed', () => (videoWindow = null));
 
@@ -258,8 +259,8 @@ async function runUnitLink() {
 async function login(account) {
   const result = await checkLogin(account);
 
-  if (result === true) {
-    setEnvValue('isLogin', true); // 로그인은 최초 한번만 수행
+  if (result > 0) {
+    setEnvValue('loginId', result); // 로그인은 최초 한번만 수행
     loginWindow.close();
     runUnitLink();
   } else loginWindow.webContents.send('loginResult', result);

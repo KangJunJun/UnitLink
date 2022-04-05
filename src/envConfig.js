@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const envFilePath = path.resolve(__dirname, '../.env');
+const envFilePath = path.join(__dirname, '../.env');
 
 const readEnvVars = () => fs.readFileSync(envFilePath, 'utf-8').split(os.EOL);
 

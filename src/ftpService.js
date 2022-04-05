@@ -1,7 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const ftp = require('basic-ftp');
-const ftpConfig = require('../config/ftp-config.json');
+const ftpConfig = require(path.join(__dirname, '../config/ftp-config.json'));
+//const ftpConfig = require('../config/ftp-config.json');
+const { getVideoFileList } = require('./db');
 const ProgressBar = require('electron-progressbar');
 const util = require('util');
 const fsMkDir = util.promisify(fs.mkdir);
@@ -40,21 +42,28 @@ function runProgressbar() {
 async function downloadFile() {
   const client = new ftp.Client();
   client.ftp.verbose = true;
+
   try {
     runProgressbar();
     await client.access(ftpConfig);
-    let downList;
+
+    const playList = await getVideoFileList();
+    const advSet = new Set(playList.map(m => m.AdvertiserId.toString()));
+    const uniqeuAdv = [...advSet]; //중복 제거
+    let downloadList = [];
     let totalSize = 0;
-    let dirList = await client.list();
-    log.info('vedio download list');
-    for (const dir of dirList) {
-      let files = await client.list(path.join(dir.name, '/'));
-      const localDirPath = path.join(localVideoPath, dir.name);
+
+    for (const adv of uniqeuAdv) {
+      const localDirPath = path.join(localVideoPath, adv);
       await ensureLocalDirectory(localDirPath);
       const localFiles = fs.readdirSync(localDirPath);
+
+      let files = await client.list(path.join(adv, '/'));
+      files = files.filter(el => playList.map(m => m.Name).includes(el.name));
+
       files = files.filter(el => !localFiles.includes(el.name));
       totalSize = files.reduce((sum, a) => sum + a.size, 0);
-      files.forEach(x => log.info(x.name));
+      downloadList.push(...files.map(m => path.join(adv, m.name)));
     }
 
     // Set a new callback function which also resets the overall counter
@@ -63,7 +72,11 @@ async function downloadFile() {
       if (totalSize > 0) progressBar.value = Math.floor((info.bytesOverall / totalSize) * 100);
     });
 
-    await downloadToDir(localVideoPath, './', client);
+    deleteDontPlayFile(playList);
+
+    for (const downloadFile of downloadList) {
+      await client.downloadTo(path.join(localVideoPath, downloadFile), downloadFile);
+    }
 
     // Stop logging
     client.trackProgress();
@@ -75,28 +88,28 @@ async function downloadFile() {
   progressBar.setCompleted();
 }
 
-async function downloadToDir(localDirPath, remoteDirPath, client) {
-  return exitAtCurrentDirectory(async () => {
-    if (remoteDirPath) {
-      await client.cd(remoteDirPath);
-    }
-    return await downloadFromWorkingDir(localDirPath, client);
-  }, client);
-}
+// async function downloadToDir(localDirPath, remoteDirPath, client) {
+//   return exitAtCurrentDirectory(async () => {
+//     if (remoteDirPath) {
+//       await client.cd(remoteDirPath);
+//     }
+//     return await downloadFromWorkingDir(localDirPath, client);
+//   }, client);
+// }
 
-async function downloadFromWorkingDir(localDirPath, client) {
-  await ensureLocalDirectory(localDirPath);
-  for (const file of await client.list()) {
-    const localPath = path.join(localDirPath, file.name);
-    if (file.isDirectory) {
-      await client.cd(file.name);
-      await downloadFromWorkingDir(localPath, client);
-      await client.cdup();
-    } else if (file.isFile && !fs.existsSync(localPath)) {
-      await client.downloadTo(localPath, file.name);
-    }
-  }
-}
+// async function downloadFromWorkingDir(localDirPath, client) {
+//   await ensureLocalDirectory(localDirPath);
+//   for (const file of await client.list()) {
+//     const localPath = path.join(localDirPath, file.name);
+//     if (file.isDirectory) {
+//       await client.cd(file.name);
+//       await downloadFromWorkingDir(localPath, client);
+//       await client.cdup();
+//     } else if (file.isFile && !fs.existsSync(localPath)) {
+//       await client.downloadTo(localPath, file.name);
+//     }
+//   }
+// }
 async function ensureLocalDirectory(path) {
   try {
     await fsStat(path);
@@ -105,15 +118,33 @@ async function ensureLocalDirectory(path) {
   }
 }
 
-async function exitAtCurrentDirectory(func, client) {
-  const userDir = await client.pwd();
-  try {
-    return await func();
-  } finally {
-    if (!client.closed) {
-      await client.cd(userDir);
+// async function exitAtCurrentDirectory(func, client) {
+//   const userDir = await client.pwd();
+//   try {
+//     return await func();
+//   } finally {
+//     if (!client.closed) {
+//       await client.cd(userDir);
+//     }
+//   }
+// }
+
+async function deleteDontPlayFile(playList) {
+  const dontPlayList = [];
+  for (const file of fs.readdirSync(localVideoPath)) {
+    const filePath = path.join(localVideoPath, file);
+    const stat = fs.statSync(filePath);
+    if (stat?.isDirectory()) {
+      const localFiles = fs.readdirSync(filePath);
+      const selectedPlayList = playList.filter(x => x.AdvertiserId == file).map(m => m.Name);
+      const dontPlayFiles = localFiles
+        .filter(fileName => !selectedPlayList.includes(fileName))
+        .map(m => path.join(filePath, m));
+
+      dontPlayList.push(...dontPlayFiles);
     }
   }
+  dontPlayList.forEach(filePath => fs.unlinkSync(filePath));
 }
 
 module.exports = {

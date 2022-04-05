@@ -118,11 +118,11 @@ ipcMain.on('closeApp', (evt, arg) => {
 // Some APIs can only be used after this event occurs.
 
 app.whenReady().then(async () => {
-  ConnectionPool();
+  await ConnectionPool();
   // 자동 업데이트 등록
   autoUpdater.checkForUpdates();
 
-  if (process.env.isLogin === 'true') await runUnitLink();
+  if (process.env.loginId > 0) await runUnitLink();
   else createLoginWindow();
 
   app.on('activate', () => {
