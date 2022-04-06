@@ -5,14 +5,12 @@ const client = new ftp.Client();
 const ftpConfig = require(path.join(__dirname, '../config/ftp-config.json'));
 //const ftpConfig = require('../config/ftp-config.json');
 const { getVideoFileList } = require('./db');
+const { log } = require('./logService');
 const ProgressBar = require('electron-progressbar');
 const util = require('util');
 const fsMkDir = util.promisify(fs.mkdir);
 const fsStat = util.promisify(fs.stat);
-const localVideoPath = path.join(__dirname, '../video/');
-const log = require('electron-log');
-log.transports.file.level = 'info';
-log.transports.file.file = __dirname + 'log.log';
+const localVideoPath = path.join(__dirname, '../../video/');
 
 let progressBar;
 function runProgressbar() {
@@ -42,14 +40,11 @@ function runProgressbar() {
 
 async function downloadFile() {
   client.ftp.verbose = true;
-
   try {
     runProgressbar();
     await client.access(ftpConfig);
-
     const playList = await getVideoFileList();
     const downloadList = await makeDownloadList(playList);
-
     // Set a new callback function which also resets the overall counter
     client.trackProgress(info => {
       console.log(info.bytesOverall);
@@ -67,7 +62,7 @@ async function downloadFile() {
     client.trackProgress();
   } catch (err) {
     console.log(err);
-    log.info('vedio download error');
+    log(`downloadFile error : ${err}`);
   }
   client.close();
   progressBar.setCompleted();
@@ -94,8 +89,8 @@ async function makeDownloadList(playList) {
   for (const adv of uniqeuAdv) {
     const localDirPath = path.join(localVideoPath, adv);
     await ensureLocalDirectory(localDirPath);
-    const localFiles = fs.readdirSync(localDirPath);
 
+    const localFiles = fs.readdirSync(localDirPath);
     let files = await client.list(path.join(adv, '/'));
     files = files.filter(el => playList.map(m => m.Name).includes(el.name));
 

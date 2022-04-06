@@ -1,11 +1,8 @@
 const sql = require('mssql');
 const path = require('path');
 const dbConfig = require('../config/db-config.json');
-const log = require('electron-log');
+const { log } = require('./logService');
 const { localStore } = require('./envConfig');
-log.transports.file.level = 'info';
-log.transports.file.resolvePath = () => path.join(__dirname, '../../log.log');
-
 //let pool;
 
 const sqlConfig = {
@@ -33,9 +30,7 @@ const poolPromise = new sql.ConnectionPool(sqlConfig)
   })
   .catch(err => {
     console.log('Connection Failed : ', err);
-    log.transports.file.level = 'info';
-    log.transports.file.resolvePath = () => path.join(__dirname, '../../log.log');
-    log.info(`Connection Failed : ${err}`);
+    log(`Connection Failed : ${err}`);
     throw err;
   });
 
@@ -78,6 +73,7 @@ const checkLogin = async account => {
     return result?.recordset.length > 0 ? result.recordset[0].Id : 0;
   } catch (error) {
     console.log(error);
+    log(`checkLogin : ${err}`);
     return { error };
   }
 };
@@ -92,7 +88,7 @@ const getVideoFileList = async () => {
       `);
     return result.recordset;
   } catch (error) {
-    console.log(error);
+    log(`getVideoFileList Failed : ${err}`);
     return { error };
   }
 };

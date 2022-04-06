@@ -18,7 +18,7 @@ const optionWindowTitle = 'UnitLink Option Form';
 
 const log = require('electron-log');
 log.transports.file.level = 'info';
-log.transports.file.resolvePath = () => path.join(__dirname, '../../log.log');
+//log.transports.file.resolvePath = () => path.join(__dirname, '../../log.log');
 
 let powerSaveBlockId = 0;
 let timerStartFlag = false;
@@ -100,7 +100,7 @@ function createLoginWindow() {
   });
 
   loginWindow.on('closed', () => {
-    if (process.env.isLogin === 'false') app.quit();
+    if (localStore.get('loginId') > 0) app.quit();
     loginWindow = null;
   });
   loginWindow.setMenu(null);
@@ -160,7 +160,7 @@ async function setScreeSaver() {
 
   if (idleTime >= settingTime && screenSaverWins.length === 0) {
     powerSaveBlockId = powerSaveBlocker.start('prevent-display-sleep'); // 절전모드 차단
-    let fileList = await getFilePathList(path.join(__dirname, '../video'));
+    let fileList = await getFilePathList(path.join(__dirname, '../../video'));
     shuffle(fileList);
     // 듀얼이상 모니터 사용을 위함
     for (const display of screen.getAllDisplays()) {

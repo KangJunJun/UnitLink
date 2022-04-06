@@ -6,7 +6,7 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 // 기존에 작성된 require() 구문 생략...
 const { autoUpdater } = require('electron-updater');
 const ProgressBar = require('electron-progressbar');
-const log = require('electron-log');
+const { log, logInit } = require('./logService');
 const path = require('path');
 const {
   timerStop,
@@ -22,9 +22,6 @@ const {
 const { localStore } = require('./envConfig');
 let progressBar;
 
-log.transports.file.level = 'info';
-log.transports.file.file = path.join(__dirname, '../log.log');
-
 if (process.env.NODE_ENV === 'development') {
   require('electron-reload')(path.join(__dirname, '../'), {
     electron: path.join(__dirname, '../node_modules', '.bin', 'electron'),
@@ -34,23 +31,23 @@ if (process.env.NODE_ENV === 'development') {
 
 /* Updater ======================================================*/
 autoUpdater.on('checking-for-update', () => {
-  log.info('Checking for update...');
+  log('Checking for update...');
 });
 autoUpdater.on('update-available', info => {
-  log.info('Update available.');
+  log('Update available.');
 });
 autoUpdater.on('update-not-available', info => {
-  log.info('latest version. : ' + info.version);
-  log.info('app version. : ' + app.getVersion());
+  log('latest version. : ' + info.version);
+  log('app version. : ' + app.getVersion());
 });
 autoUpdater.on('error', err => {
-  log.info('error in auto-updater. error : ' + err);
+  log('error in auto-updater. error : ' + err);
 });
 autoUpdater.on('download-progress', progressObj => {
   let log_message = 'Download speed: ' + progressObj.bytesPerSecond;
   log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
   log_message = log_message + ' (' + progressObj.transferred + '/' + progressObj.total + ')';
-  log.info(log_message);
+  log(log_message);
 
   progressBar = new ProgressBar({
     text: 'Downloading...',
@@ -119,6 +116,7 @@ ipcMain.on('closeApp', (evt, arg) => {
 // Some APIs can only be used after this event occurs.
 
 app.whenReady().then(async () => {
+  logInit();
   //await ConnectionPool();
   // 자동 업데이트 등록
   autoUpdater.checkForUpdates();
