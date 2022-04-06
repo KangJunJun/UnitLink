@@ -7,13 +7,18 @@ const {
   screen,
   Tray,
 } = require('electron');
-const { queryDatabase, checkLogin } = require('./db');
+
+const { checkLogin } = require('./db');
 const { getFilePathList } = require('./fileService');
-const { setEnvValue } = require('./envConfig');
+const { setEnvValue, localStore } = require('./envConfig');
 const { downloadFile } = require('./ftpService');
 const path = require('path');
 const screenSaver = 'screenSaver';
 const optionWindowTitle = 'UnitLink Option Form';
+
+const log = require('electron-log');
+log.transports.file.level = 'info';
+log.transports.file.resolvePath = () => path.join(__dirname, '../../log.log');
 
 let powerSaveBlockId = 0;
 let timerStartFlag = false;
@@ -40,7 +45,7 @@ function createOptionWindow() {
       // queryDatabase().then(data => {
       //   optionWindow.webContents.send('DataSend', [data, process.env.settingTime ?? 30]);
       // });
-      optionWindow.webContents.send('DataSend', process.env.settingTime ?? 30);
+      optionWindow.webContents.send('DataSend', localStore.get('settingTime') ?? 30);
     });
 
     optionWindow.setMenu(null);
@@ -84,7 +89,6 @@ function createLoginWindow() {
   loginWindow = new BrowserWindow({
     width: 360,
     height: 480,
-    show: true,
     frame: false,
     resizable: false,
     hasShadow: true,
@@ -101,21 +105,30 @@ function createLoginWindow() {
   });
   loginWindow.setMenu(null);
   loginWindow.loadFile(path.join(__dirname, './view/login.html'));
+
+  loginWindow.once('ready-to-show', () => {
+    loginWindow.show();
+  });
+
+  loginWindow.webContents.on('did-finish-load', () => {
+    //loginWindow.webContents.send('setLog', path.join(__dirname, '../../log.log'));
+  });
+
   // Open the DevTools.
   //loginWindow.webContents.openDevTools();
 }
 
 async function test() {
   //ConnectionPool();
-  const bb = await queryDatabase();
-  optionWindow.webContents.send('DataSend', bb);
+  //const bb = await queryDatabase();
+  //optionWindow.webContents.send('DataSend', bb);
 }
 function createVideoWindow(fileList, bounds) {
   let videoWindow = new BrowserWindow({
     title: screenSaver,
     width: 1000,
     height: 600,
-    //fullscreen: true,
+    fullscreen: true,
     show: false,
     icon: path.join(__dirname, '../unitlink.ico'),
     x: bounds?.x ?? 0 + 50,
@@ -128,7 +141,7 @@ function createVideoWindow(fileList, bounds) {
   //videoWindow.webContents.openDevTools();
   videoWindow.setMenu(null);
   videoWindow.loadFile(path.join(__dirname, './view/video.html'));
-  //videoWindow.setAlwaysOnTop(true, 'screen-saver');
+  videoWindow.setAlwaysOnTop(true, 'screen-saver');
   videoWindow.setVisibleOnAllWorkspaces(true);
   videoWindow.on('closed', () => (videoWindow = null));
 
@@ -141,7 +154,7 @@ function createVideoWindow(fileList, bounds) {
 
 async function setScreeSaver() {
   const idleTime = powerMonitor.getSystemIdleTime();
-  const settingTime = process.env.settingTime ?? 30;
+  const settingTime = localStore.get('settingTime') ?? 30;
   const screenSaverWins = BrowserWindow.getAllWindows().filter(win => win.title == screenSaver);
   console.log(idleTime);
 
@@ -239,7 +252,7 @@ const fadeWindowOut = (browserWindow, step = 0.1, fadeEveryXSeconds = 2, initKee
 };
 
 function saveOption(arg) {
-  setEnvValue('settingTime', arg.settingTime);
+  localStore.set('settingTime', arg.settingTime);
   if (timerStartFlag) {
     timerStop();
     timerStart();
@@ -260,7 +273,7 @@ async function login(account) {
   const result = await checkLogin(account);
 
   if (result > 0) {
-    setEnvValue('loginId', result); // 로그인은 최초 한번만 수행
+    localStore.set('loginId', result); // 로그인은 최초 한번만 수행
     loginWindow.close();
     runUnitLink();
   } else loginWindow.webContents.send('loginResult', result);

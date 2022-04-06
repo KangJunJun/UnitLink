@@ -22,6 +22,11 @@ const setEnvValue = (key, value) => {
   fs.writeFileSync(envFilePath, envVars.join(os.EOL));
 };
 
+const Store = require('electron-store');
+const localConfig = require('../config/local-config.json');
+const localStore = new Store(localConfig);
+
 module.exports = {
   setEnvValue,
+  localStore,
 };

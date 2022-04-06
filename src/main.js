@@ -1,13 +1,12 @@
 // Modules to control application life and create native browser window
-require('dotenv').config();
-console.log(process.env.NODE_ENV);
+//require('dotenv').config();
+//console.log(process.env.NODE_ENV);
 
-const { app, screen, BrowserWindow, ipcMain, Tray, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 // 기존에 작성된 require() 구문 생략...
 const { autoUpdater } = require('electron-updater');
 const ProgressBar = require('electron-progressbar');
 const log = require('electron-log');
-const { ConnectionPool, checkLogin } = require('./db');
 const path = require('path');
 const {
   timerStop,
@@ -19,6 +18,8 @@ const {
   runUnitLink,
   login,
 } = require('./mainModule');
+//const { ConnectionPool } = require('./db');
+const { localStore } = require('./envConfig');
 let progressBar;
 
 log.transports.file.level = 'info';
@@ -118,11 +119,10 @@ ipcMain.on('closeApp', (evt, arg) => {
 // Some APIs can only be used after this event occurs.
 
 app.whenReady().then(async () => {
-  await ConnectionPool();
+  //await ConnectionPool();
   // 자동 업데이트 등록
   autoUpdater.checkForUpdates();
-
-  if (process.env.loginId > 0) await runUnitLink();
+  if (localStore.get('loginId') > 0) await runUnitLink();
   else createLoginWindow();
 
   app.on('activate', () => {

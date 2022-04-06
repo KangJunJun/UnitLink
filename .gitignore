@@ -5,7 +5,7 @@ dist
 config
 obj/
 *.log
-.env
+localStorage.json
 # exclude video file
 video/*
 # exception to the rule

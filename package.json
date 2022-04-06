@@ -59,6 +59,7 @@
     "dotenv": "^16.0.0",
     "electron-log": "^4.4.6",
     "electron-progressbar": "^2.0.1",
+    "electron-store": "^8.0.1",
     "electron-updater": "^4.6.5",
     "ftp": "^0.3.10",
     "gridjs": "^5.0.2",

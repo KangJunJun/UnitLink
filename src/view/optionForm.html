@@ -29,7 +29,7 @@
 
   <p>
   <h2>대기 시간</h2>
-  <input type='number' id='settingTime' value='30' style='text-align: right;' /><a>초</a>
+  <input type='number' id='settingTime' style='text-align: right;' /><a>초</a>
   </p>
   <button id=" btn_save" onclick='save()'>저장</button>
 
@@ -41,7 +41,6 @@
   <script>
 
     let testdata;
-    const { queryDatabase, ConnectionPool } = require('../db');
     //const { Grid } = require('gridjs');
     const fs = require('fs');
     const path = require('path');

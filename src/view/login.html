@@ -71,6 +71,12 @@
       ipcRenderer.send("checkLogin", account);
     });
 
+    ipcRenderer.on('setLog', (event, arg) => {
+      console.log('test');
+      alert(arg);
+      document.getElementById('labelError').innerText = arg;
+    });
+
 
     ipcRenderer.on('loginResult', (event, arg) => {
       const loginResult = arg;
