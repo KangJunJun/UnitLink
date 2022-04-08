@@ -8,17 +8,8 @@ const { autoUpdater } = require('electron-updater');
 const ProgressBar = require('electron-progressbar');
 const { log, logInit } = require('./logService');
 const path = require('path');
-const {
-  timerStop,
-  timerStart,
-  createOptionWindow,
-  createLoginWindow,
-  test,
-  saveOption,
-  runUnitLink,
-  login,
-} = require('./mainModule');
-//const { ConnectionPool } = require('./db');
+const mainModule = require('./mainModule');
+const { updatePlaySummary } = require('./sqlManager/sqlService');
 const { localStore } = require('./envConfig');
 let progressBar;
 
@@ -57,7 +48,7 @@ autoUpdater.on('download-progress', progressObj => {
   progressBar
     .on('completed', function () {
       console.info(`completed...`);
-      log.info('client update complte');
+      log('client update complte');
       progressBar.detail = 'Task completed. Exiting...';
     })
     .on('aborted', function () {
@@ -66,7 +57,7 @@ autoUpdater.on('download-progress', progressObj => {
 });
 
 autoUpdater.on('update-downloaded', info => {
-  log.info('Update downloaded.');
+  log('Update downloaded.');
   progressBar.setCompleted();
   dialog
     .showMessageBox({
@@ -89,26 +80,34 @@ ipcMain.on('exit-app', (event, arg) => {
 });
 
 ipcMain.on('test-app', (event, arg) => {
-  test();
+  mainModule.test();
 });
 
 ipcMain.on('timerStart', (event, arg) => {
-  timerStart();
+  mainModule.timerStart();
 });
 
 ipcMain.on('timerStop', (event, arg) => {
-  timerStop();
+  mainModule.timerStop();
 });
 
 ipcMain.on('save', (event, arg) => {
-  saveOption(arg);
+  mainModule.saveOption(arg);
 });
 
 ipcMain.on('checkLogin', async (event, arg) => {
-  login(arg);
+  mainModule.login(arg);
 });
 ipcMain.on('closeApp', (evt, arg) => {
   app.quit();
+});
+
+ipcMain.on('playedVideo', (evt, arg) => {
+  mainModule.recordPlayInfo(evt.senderFrame.frameTreeNodeId, arg);
+});
+
+ipcMain.on('recordPlay', (evt, arg) => {
+  mainModule.recordPlayInfo(evt.senderFrame.frameTreeNodeId, arg, false);
 });
 
 // This method will be called when Electron has finished
@@ -120,13 +119,13 @@ app.whenReady().then(async () => {
   //await ConnectionPool();
   // 자동 업데이트 등록
   autoUpdater.checkForUpdates();
-  if (localStore.get('loginId') > 0) await runUnitLink();
-  else createLoginWindow();
+  if (localStore.get('loginId') > 0) await mainModule.runUnitLink();
+  else mainModule.createLoginWindow();
 
   app.on('activate', () => {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createOptionWindow();
+    if (BrowserWindow.getAllWindows().length === 0) mainModule.createOptionWindow();
   });
 });
 

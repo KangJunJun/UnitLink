@@ -8,9 +8,14 @@ const {
   Tray,
 } = require('electron');
 
-const { checkLogin } = require('./db');
+const {
+  checkLogin,
+  getVideoFileList,
+  accumulatePlayInfo,
+  updateCompletePlayInfo,
+} = require('./sqlManager/sqlService');
 const { getFilePathList } = require('./fileService');
-const { setEnvValue, localStore } = require('./envConfig');
+const { localStore } = require('./envConfig');
 const { downloadFile } = require('./ftpService');
 const path = require('path');
 const screenSaver = 'screenSaver';
@@ -23,9 +28,11 @@ log.transports.file.level = 'info';
 let powerSaveBlockId = 0;
 let timerStartFlag = false;
 let timer;
+let tempIdleTime;
 let optionWindow;
 let loginWindow;
 let tray;
+let mainProcessId;
 
 function createOptionWindow() {
   // Create the browser window.
@@ -123,8 +130,8 @@ async function test() {
   //const bb = await queryDatabase();
   //optionWindow.webContents.send('DataSend', bb);
 }
-function createVideoWindow(fileList, bounds) {
-  let videoWindow = new BrowserWindow({
+function createVideoWindow(fileList, bounds, isMain = true) {
+  const videoWindow = new BrowserWindow({
     title: screenSaver,
     width: 1000,
     height: 600,
@@ -138,12 +145,27 @@ function createVideoWindow(fileList, bounds) {
       contextIsolation: false,
     },
   });
+
+  mainProcessId = videoWindow.id;
   //videoWindow.webContents.openDevTools();
   videoWindow.setMenu(null);
   videoWindow.loadFile(path.join(__dirname, './view/video.html'));
   videoWindow.setAlwaysOnTop(true, 'screen-saver');
   videoWindow.setVisibleOnAllWorkspaces(true);
-  videoWindow.on('closed', () => (videoWindow = null));
+
+  // videoWindow.on('close', e => {
+  //   //e.preventDefault();
+  //   videoWindow.webContents.send('closeVideo');
+  // });
+
+  // videoWindow.on('closed', e => {
+  //   console.log('close!!');
+  // });
+
+  // videoWindow.onbeforeunload = e => {
+  //   e.returnValue = false; // this will *prevent* the closing no matter what value is passed
+  //   videoWindow.webContents.send('closeVideo');
+  // };
 
   videoWindow.once('ready-to-show', () => {
     videoWindow.show();
@@ -155,22 +177,33 @@ function createVideoWindow(fileList, bounds) {
 async function setScreeSaver() {
   const idleTime = powerMonitor.getSystemIdleTime();
   const settingTime = localStore.get('settingTime') ?? 30;
+  const allDisplays = screen.getAllDisplays();
   const screenSaverWins = BrowserWindow.getAllWindows().filter(win => win.title == screenSaver);
-  console.log(idleTime);
+
+  if (idleTime > 0) tempIdleTime = idleTime;
 
   if (idleTime >= settingTime && screenSaverWins.length === 0) {
     powerSaveBlockId = powerSaveBlocker.start('prevent-display-sleep'); // 절전모드 차단
-    let fileList = await getFilePathList(path.join(__dirname, '../../video'));
+    //let fileList = await getFilePathList(path.join(__dirname, '../../video'));
+    let fileList = await getVideoFileList();
     shuffle(fileList);
-    // 듀얼이상 모니터 사용을 위함
-    for (const display of screen.getAllDisplays()) {
-      createVideoWindow(fileList, display.bounds);
+    // 듀얼이상 모니터 사용을 위함  //첫번째는 메인모니터
+    for (const display of allDisplays) {
+      if (display === allDisplays[0]) createVideoWindow(fileList, display.bounds);
+      else createVideoWindow(fileList, display.bounds, false);
     }
   } else if (idleTime === 0 && screenSaverWins.length > 0) {
     powerSaveBlocker.isStarted(powerSaveBlockId) && powerSaveBlocker.stop(powerSaveBlockId); // 절전모드 차단 해제
     for (const win of screenSaverWins) {
-      win.title == screenSaver && win.close();
+      win.title === screenSaver && win.close();
     }
+  }
+}
+
+function recordPlayInfo(frameId, playInfo, isComplete = true) {
+  if (mainProcessId === frameId) {
+    if (isComplete) updateCompletePlayInfo(playInfo.Id);
+    else accumulatePlayInfo(playInfo, tempIdleTime);
   }
 }
 
@@ -291,4 +324,5 @@ module.exports = {
   saveOption,
   runUnitLink,
   login,
+  recordPlayInfo,
 };
