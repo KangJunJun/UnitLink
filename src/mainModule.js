@@ -67,9 +67,9 @@ function createIntroWindow() {
   //if (BrowserWindow.getAllWindows().length === 0) {
   const introWindow = new BrowserWindow({
     width: 600,
-    height: 200,
+    height: 300,
     show: false,
-    frame: false,
+    //fullscreen: true,
     resizable: false,
     transparent: true,
     titleBarStyle: 'hidden',
@@ -80,8 +80,10 @@ function createIntroWindow() {
       contextIsolation: false,
     },
   });
-  introWindow.webContents.on('did-finish-load', () => {
+
+  introWindow.webContents.on('did-finish-load', async () => {
     introWindow.show();
+    await runUnitLink(introWindow);
     fadeWindowOut(introWindow, 0.02, 10, 3);
   });
   //optionWindow.setMenu(null);
@@ -89,6 +91,8 @@ function createIntroWindow() {
   // Open the DevTools.
   //introWindow.webContents.openDevTools();
   //}
+
+  return introWindow;
 }
 
 function createLoginWindow() {
@@ -135,7 +139,7 @@ function createVideoWindow(bounds, isMain = true) {
     title: screenSaver,
     width: 1000,
     height: 600,
-    //fullscreen: true,
+    fullscreen: true,
     show: false,
     icon: path.join(__dirname, '../unitlink.ico'),
     x: bounds?.x ?? 0 + 50,
@@ -156,7 +160,7 @@ function createVideoWindow(bounds, isMain = true) {
   //videoWindow.webContents.openDevTools();
   videoWindow.setMenu(null);
   videoWindow.loadFile(path.join(__dirname, './view/video.html'));
-  //videoWindow.setAlwaysOnTop(true, 'screen-saver');
+  videoWindow.setAlwaysOnTop(true, 'screen-saver');
   videoWindow.setVisibleOnAllWorkspaces(true);
 
   videoWindow.once('ready-to-show', () => {
@@ -289,9 +293,8 @@ function saveOption(arg) {
   }
 }
 
-async function runUnitLink() {
-  playList = await downloadFile();
-  createIntroWindow();
+async function runUnitLink(introWindow) {
+  playList = await downloadFile(introWindow);
   tray = new Tray(path.join(__dirname, '../unitlink.ico'));
   tray.setToolTip('Unit Link');
   tray.setContextMenu(contextMenu);
@@ -305,7 +308,7 @@ async function login(account) {
   if (result > 0) {
     localStore.set('loginId', result); // 로그인은 최초 한번만 수행
     loginWindow.close();
-    runUnitLink();
+    createIntroWindow();
   } else loginWindow.webContents.send('loginResult', result);
 }
 
@@ -330,7 +333,6 @@ module.exports = {
   createLoginWindow,
   test,
   saveOption,
-  runUnitLink,
   login,
   recordPlayInfo,
   autoLaunch,

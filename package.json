@@ -68,6 +68,7 @@
     "jquery": "^3.6.0",
     "mssql": "^8.0.2",
     "nodemon": "^2.0.15",
+    "progressbar.js": "^1.1.0",
     "upgrade": "^1.1.0",
     "util": "^0.12.4"
   }

@@ -6,52 +6,23 @@ const ftpConfig = require(path.join(__dirname, '../config/ftp-config.json'));
 //const ftpConfig = require('../config/ftp-config.json');
 const { getVideoFileList } = require('./sqlManager/sqlService');
 const { log } = require('./logService');
-const ProgressBar = require('electron-progressbar');
 const util = require('util');
 const fsMkDir = util.promisify(fs.mkdir);
 const fsStat = util.promisify(fs.stat);
 const localVideoPath = path.join(__dirname, '../../video/');
 
-let progressBar;
-function runProgressbar() {
-  progressBar = new ProgressBar({
-    title: 'Download',
-    text: 'Video Downloading...',
-    detail: 'Wait...',
-    indeterminate: false,
-    browserWindow: {
-      width: 500,
-      icon: path.join(__dirname, '../unitlink.ico'),
-    },
-  });
-
-  progressBar
-    .on('completed', function () {
-      console.info(`completed...`);
-      progressBar.detail = 'Task completed. Exiting...';
-    })
-    .on('progress', function (value) {
-      progressBar.detail = ` ${value} %`;
-    })
-    .on('aborted', function () {
-      console.info(`aborted...`);
-    });
-}
-
-async function downloadFile() {
+async function downloadFile(intro) {
   const playList = await getVideoFileList();
   client.ftp.verbose = true;
 
   try {
-    runProgressbar();
     await client.access(ftpConfig);
 
     const downloadList = await makeDownloadList(playList);
     // Set a new callback function which also resets the overall counter
     client.trackProgress(info => {
-      console.log(info.bytesOverall);
       if (downloadList.totalSize > 0)
-        progressBar.value = Math.floor((info.bytesOverall / downloadList.totalSize) * 100);
+        intro.webContents.send('setProgressValue', info.bytesOverall / downloadList.totalSize);
     });
 
     deleteDontPlayFile(playList);
@@ -67,8 +38,6 @@ async function downloadFile() {
     log(`downloadFile error : ${err}`);
   }
   client.close();
-  progressBar.setCompleted();
-
   return playList;
 }
 
@@ -87,8 +56,6 @@ async function makeDownloadList(playList) {
     pathList: [],
     totalSize: 0,
   };
-  //let downloadList = [];
-  //let totalSize = 0;
 
   for (const adv of uniqeuAdv) {
     const localDirPath = path.join(localVideoPath, adv);

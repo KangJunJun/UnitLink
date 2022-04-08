@@ -119,7 +119,7 @@ app.whenReady().then(async () => {
 
   process.env.NODE_ENV !== 'development' && mainModule.autoLaunch();
 
-  if (localStore.get('loginId') > 0) await mainModule.runUnitLink();
+  if (localStore.get('loginId') > 0) mainModule.createIntroWindow();
   else mainModule.createLoginWindow();
 
   app.on('activate', () => {
