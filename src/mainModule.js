@@ -15,7 +15,6 @@ const {
   updateCompletePlayInfo,
 } = require('./sqlManager/sqlService');
 const AutoLaunch = require('auto-launch');
-const { getFilePathList } = require('./fileService');
 const { localStore } = require('./envConfig');
 const { downloadFile } = require('./ftpService');
 const path = require('path');
@@ -27,7 +26,9 @@ const { log } = require('./logService');
 let powerSaveBlockId = 0;
 let timerStartFlag = false;
 let timer;
-let tempIdleTime;
+let playList;
+let playTime = 0;
+let currentPlayIndex = 0;
 let optionWindow;
 let loginWindow;
 let tray;
@@ -129,12 +130,12 @@ async function test() {
   //const bb = await queryDatabase();
   //optionWindow.webContents.send('DataSend', bb);
 }
-function createVideoWindow(fileList, bounds, isMain = true) {
+function createVideoWindow(bounds, isMain = true) {
   const videoWindow = new BrowserWindow({
     title: screenSaver,
     width: 1000,
     height: 600,
-    fullscreen: true,
+    //fullscreen: true,
     show: false,
     icon: path.join(__dirname, '../unitlink.ico'),
     x: bounds?.x ?? 0 + 50,
@@ -145,51 +146,45 @@ function createVideoWindow(fileList, bounds, isMain = true) {
     },
   });
 
-  mainProcessId = videoWindow.id;
+  if (isMain) {
+    mainProcessId = videoWindow.id;
+    videoWindow.on('close', () => {
+      recordPlayInfo(mainProcessId, currentPlayIndex, false);
+    });
+  }
+
   //videoWindow.webContents.openDevTools();
   videoWindow.setMenu(null);
   videoWindow.loadFile(path.join(__dirname, './view/video.html'));
-  videoWindow.setAlwaysOnTop(true, 'screen-saver');
+  //videoWindow.setAlwaysOnTop(true, 'screen-saver');
   videoWindow.setVisibleOnAllWorkspaces(true);
-
-  // videoWindow.on('close', e => {
-  //   //e.preventDefault();
-  //   videoWindow.webContents.send('closeVideo');
-  // });
-
-  // videoWindow.on('closed', e => {
-  //   console.log('close!!');
-  // });
-
-  // videoWindow.onbeforeunload = e => {
-  //   e.returnValue = false; // this will *prevent* the closing no matter what value is passed
-  //   videoWindow.webContents.send('closeVideo');
-  // };
 
   videoWindow.once('ready-to-show', () => {
     videoWindow.show();
-    videoWindow.webContents.send('setFileList', fileList);
-    //videoWindow.webContents.send('setFileList', path.join(__dirname));
+    videoWindow.webContents.send('setFileList', playList);
   });
 }
 
-async function setScreeSaver() {
+async function setScreenSaver() {
   const idleTime = powerMonitor.getSystemIdleTime();
   const settingTime = localStore.get('settingTime') ?? 30;
   const allDisplays = screen.getAllDisplays();
   const screenSaverWins = BrowserWindow.getAllWindows().filter(win => win.title == screenSaver);
 
-  if (idleTime > 0) tempIdleTime = idleTime;
+  screenSaverWins.length > 0 && playTime++;
+
+  console.log('playTime :' + playTime);
+  console.log('idleTime :' + idleTime);
 
   if (idleTime >= settingTime && screenSaverWins.length === 0) {
     powerSaveBlockId = powerSaveBlocker.start('prevent-display-sleep'); // 절전모드 차단
-    //let fileList = await getFilePathList(path.join(__dirname, '../../video'));
-    let fileList = await getVideoFileList();
-    shuffle(fileList);
+    // 새로 화면보호기 동작할때마다 순서 섞기
+    shuffle(playList);
+
     // 듀얼이상 모니터 사용을 위함  //첫번째는 메인모니터
     for (const display of allDisplays) {
-      if (display === allDisplays[0]) createVideoWindow(fileList, display.bounds);
-      else createVideoWindow(fileList, display.bounds, false);
+      if (display === allDisplays[0]) createVideoWindow(display.bounds);
+      else createVideoWindow(display.bounds, false);
     }
   } else if (idleTime === 0 && screenSaverWins.length > 0) {
     powerSaveBlocker.isStarted(powerSaveBlockId) && powerSaveBlocker.stop(powerSaveBlockId); // 절전모드 차단 해제
@@ -199,10 +194,13 @@ async function setScreeSaver() {
   }
 }
 
-function recordPlayInfo(frameId, playInfo, isComplete = true) {
+function recordPlayInfo(frameId, receivedIndex, isComplete = true) {
   if (mainProcessId === frameId) {
-    if (isComplete) updateCompletePlayInfo(playInfo.Id);
-    else accumulatePlayInfo(playInfo, tempIdleTime);
+    currentPlayIndex = receivedIndex;
+    if (isComplete) updateCompletePlayInfo(playList[currentPlayIndex].Id);
+    else accumulatePlayInfo(playList[currentPlayIndex], playTime);
+
+    playTime = 0;
   }
 }
 
@@ -234,7 +232,7 @@ function timerStart() {
   if (flagOnOff(true)) {
     clearInterval(timer);
     timer = setInterval(() => {
-      setScreeSaver();
+      setScreenSaver();
     }, 1000);
   }
 }
@@ -292,7 +290,7 @@ function saveOption(arg) {
 }
 
 async function runUnitLink() {
-  await downloadFile();
+  playList = await downloadFile();
   createIntroWindow();
   tray = new Tray(path.join(__dirname, '../unitlink.ico'));
   tray.setToolTip('Unit Link');

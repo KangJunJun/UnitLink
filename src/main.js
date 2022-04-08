@@ -103,12 +103,8 @@ ipcMain.on('closeApp', (evt, arg) => {
   app.quit();
 });
 
-ipcMain.on('playedVideo', (evt, arg) => {
+ipcMain.on('playRecord', (evt, arg) => {
   mainModule.recordPlayInfo(evt.senderFrame.frameTreeNodeId, arg);
-});
-
-ipcMain.on('recordPlay', (evt, arg) => {
-  mainModule.recordPlayInfo(evt.senderFrame.frameTreeNodeId, arg, false);
 });
 
 // This method will be called when Electron has finished

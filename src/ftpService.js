@@ -39,11 +39,13 @@ function runProgressbar() {
 }
 
 async function downloadFile() {
+  const playList = await getVideoFileList();
   client.ftp.verbose = true;
+
   try {
     runProgressbar();
     await client.access(ftpConfig);
-    const playList = await getVideoFileList();
+
     const downloadList = await makeDownloadList(playList);
     // Set a new callback function which also resets the overall counter
     client.trackProgress(info => {
@@ -66,6 +68,8 @@ async function downloadFile() {
   }
   client.close();
   progressBar.setCompleted();
+
+  return playList;
 }
 
 async function ensureLocalDirectory(path) {
