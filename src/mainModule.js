@@ -14,6 +14,7 @@ const {
   accumulatePlayInfo,
   updateCompletePlayInfo,
 } = require('./sqlManager/sqlService');
+const AutoLaunch = require('auto-launch');
 const { getFilePathList } = require('./fileService');
 const { localStore } = require('./envConfig');
 const { downloadFile } = require('./ftpService');
@@ -21,9 +22,7 @@ const path = require('path');
 const screenSaver = 'screenSaver';
 const optionWindowTitle = 'UnitLink Option Form';
 
-const log = require('electron-log');
-log.transports.file.level = 'info';
-//log.transports.file.resolvePath = () => path.join(__dirname, '../../log.log');
+const { log } = require('./logService');
 
 let powerSaveBlockId = 0;
 let timerStartFlag = false;
@@ -312,6 +311,17 @@ async function login(account) {
   } else loginWindow.webContents.send('loginResult', result);
 }
 
+function autoLaunch() {
+  let autoLaunch = new AutoLaunch({
+    name: 'Unit Link',
+    path: app.getPath('exe'),
+  });
+
+  autoLaunch.isEnabled().then(isEnabled => {
+    if (!isEnabled) autoLaunch.enable();
+  });
+}
+
 module.exports = {
   timerStart,
   timerStop,
@@ -325,4 +335,5 @@ module.exports = {
   runUnitLink,
   login,
   recordPlayInfo,
+  autoLaunch,
 };

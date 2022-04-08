@@ -6,6 +6,7 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 // 기존에 작성된 require() 구문 생략...
 const { autoUpdater } = require('electron-updater');
 const ProgressBar = require('electron-progressbar');
+
 const { log, logInit } = require('./logService');
 const path = require('path');
 const mainModule = require('./mainModule');
@@ -119,6 +120,9 @@ app.whenReady().then(async () => {
   //await ConnectionPool();
   // 자동 업데이트 등록
   autoUpdater.checkForUpdates();
+
+  process.env.NODE_ENV !== 'development' && mainModule.autoLaunch();
+
   if (localStore.get('loginId') > 0) await mainModule.runUnitLink();
   else mainModule.createLoginWindow();
 
