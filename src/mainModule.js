@@ -111,7 +111,7 @@ function createLoginWindow() {
   });
 
   loginWindow.on('closed', () => {
-    if (localStore.get('loginId') > 0) app.quit();
+    if (!localStore.get('loginId') > 0) app.quit();
     loginWindow = null;
   });
   loginWindow.setMenu(null);
@@ -270,6 +270,7 @@ const fadeWindowOut = (browserWindow, step = 0.1, fadeEveryXSeconds = 2, initKee
   let keep = initKeep;
   // fadeEveryXSeconds 를 주기로 step에 맞게 단계를 나눠 fade 시킨다.
   const interval = setInterval(() => {
+    if (browserWindow.isDestroyed()) return;
     // 투명도가 0이 되면 종료
     if (opacity <= 0) {
       clearInterval(interval);

@@ -24,6 +24,7 @@ const setEnvValue = (key, value) => {
 
 const Store = require('electron-store');
 const localConfig = require('../config/local-config.json');
+localConfig.cwd = path.join(__dirname, '../../');
 const localStore = new Store(localConfig);
 
 module.exports = {
