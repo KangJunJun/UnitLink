@@ -28,9 +28,9 @@
     ],
     "win": {
       "target": [
-        "zip",
         "nsis"
       ],
+      "requestedExecutionLevel": "requireAdministrator",
       "icon": "./unitlink256.ico"
     }
   },
