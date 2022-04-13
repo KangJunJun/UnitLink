@@ -66,6 +66,7 @@
     "gridjs": "^5.0.2",
     "hls-server": "^1.5.0",
     "jquery": "^3.6.0",
+    "moment": "^2.29.2",
     "mssql": "^8.0.2",
     "nodemon": "^2.0.15",
     "progressbar.js": "^1.1.0",

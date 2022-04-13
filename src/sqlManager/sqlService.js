@@ -1,6 +1,7 @@
 const { log } = require('../logService');
 const { localStore } = require('../envConfig');
 const { poolPromise } = require('./db');
+const moment = require('moment');
 let playList = {};
 
 const checkLogin = async account => {
@@ -14,7 +15,7 @@ const checkLogin = async account => {
     return result?.recordset.length > 0 ? result.recordset[0].Id : 0;
   } catch (error) {
     console.log(error);
-    log(`checkLogin : ${err}`);
+    log(`checkLogin : ${error}`);
     return { error };
   }
 };
@@ -54,6 +55,9 @@ const updateCompletePlayInfo = async playInfoId => {
 
 const accumulatePlayInfo = async (playInfo, idleTime) => {
   try {
+    const playTime = moment.duration(playInfo.PlayTime).asSeconds();
+    if (idleTime > playTime) idleTime = playTime;
+
     const query = `UPDATE UL_PlayList 
     SET TotalPlayCount = TotalPlayCount + 1, TotalPlayTime = DATEADD(second, ${idleTime}, TotalPlayTime)
     WHERE Id = ${playInfo.Id}`;
